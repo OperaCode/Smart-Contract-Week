@@ -5,14 +5,14 @@ import {Script} from "forge-std/Script.sol";
 import {Todo} from "../src/Todo.sol";
 
 contract DeployTodo is Script {
-    Todo public counter;
+    Todo public todo;
 
     function setUp() public {}
 
     function run() public {
         vm.startBroadcast();
 
-        counter = new Todo();
+        todo = new Todo();
 
         vm.stopBroadcast();
     }
