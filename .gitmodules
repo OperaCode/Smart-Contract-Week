@@ -1,0 +1,3 @@
+[submodule "schoolManagement/lib/openzeppelin-contracts"]
+	path = schoolManagement/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
