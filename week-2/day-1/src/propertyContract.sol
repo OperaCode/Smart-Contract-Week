@@ -6,7 +6,6 @@ import {SafeERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/
 import {AccessControl} from "lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
 
 contract PropertyManager is AccessControl {
-    
     using SafeERC20 for IERC20;
 
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -18,10 +17,9 @@ contract PropertyManager is AccessControl {
         _grantRole(MANAGER_ROLE, msg.sender);
     }
 
+    error NotManager();
     modifier onlyManager() {
-        if (!hasRole(MANAGER_ROLE, msg.sender)) {
-            revert("Not manager");
-        }
+        if (!hasRole(MANAGER_ROLE, msg.sender)) revert NotManager();
         _;
     }
 
@@ -44,13 +42,16 @@ contract PropertyManager is AccessControl {
         address indexed owner,
         uint256 price
     );
+
     event PropertyRemoved(uint256 indexed id);
+
     event PropertyBought(
         uint256 indexed id,
         address indexed seller,
         address indexed buyer,
         uint256 price
     );
+    
     event PropertyForSaleUpdated(
         uint256 indexed id,
         bool forSale,
