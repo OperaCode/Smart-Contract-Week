@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import "lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
-
-
+import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {AccessControl} from "lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
 
 contract PropertyManager is AccessControl {
+    
     using SafeERC20 for IERC20;
 
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -15,8 +14,15 @@ contract PropertyManager is AccessControl {
 
     constructor(IERC20 _token) {
         token = _token;
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(MANAGER_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MANAGER_ROLE, msg.sender);
+    }
+
+    modifier onlyManager() {
+        if (!hasRole(MANAGER_ROLE, msg.sender)) {
+            revert("Not manager");
+        }
+        _;
     }
 
     struct Property {
@@ -32,15 +38,25 @@ contract PropertyManager is AccessControl {
 
     Property[] private properties;
     uint256 public propertyCount;
-    
 
-    event PropertyCreated(uint256 indexed id, address indexed owner, uint256 price);
+    event PropertyCreated(
+        uint256 indexed id,
+        address indexed owner,
+        uint256 price
+    );
     event PropertyRemoved(uint256 indexed id);
-    event PropertyBought(uint256 indexed id, address indexed seller, address indexed buyer, uint256 price);
-    event PropertyForSaleUpdated(uint256 indexed id, bool forSale, uint256 price);
+    event PropertyBought(
+        uint256 indexed id,
+        address indexed seller,
+        address indexed buyer,
+        uint256 price
+    );
+    event PropertyForSaleUpdated(
+        uint256 indexed id,
+        bool forSale,
+        uint256 price
+    );
 
-    /// @notice Create a property entry
-    /// @dev Only accounts with MANAGER_ROLE can create properties
     function createProperty(
         address _owner,
         string calldata _name,
@@ -70,7 +86,6 @@ contract PropertyManager is AccessControl {
         emit PropertyCreated(propertyCount, _owner, _price);
     }
 
-    /// @notice Remove a property (logical delete)
     function removeProperty(uint256 _id) external onlyManager {
         require(_id > 0 && _id <= propertyCount, "Invalid id");
         uint256 index = _id - 1;
@@ -84,14 +99,16 @@ contract PropertyManager is AccessControl {
         emit PropertyRemoved(_id);
     }
 
-    
     function setForSale(uint256 _id, bool _forSale, uint256 _price) external {
         require(_id > 0 && _id <= propertyCount, "Invalid id");
         uint256 index = _id - 1;
 
         Property storage p = properties[index];
         require(p.exists, "Removed");
-        require(msg.sender == p.owner || hasRole(MANAGER_ROLE, msg.sender), "Not owner or manager");
+        require(
+            msg.sender == p.owner || hasRole(MANAGER_ROLE, msg.sender),
+            "Not owner or manager"
+        );
 
         p.forSale = _forSale;
         if (_forSale) {
@@ -104,7 +121,6 @@ contract PropertyManager is AccessControl {
         emit PropertyForSaleUpdated(_id, p.forSale, p.price);
     }
 
-    /// @notice Purchase a property using the configured ERC20 token
     function buyProperty(uint256 _id) external {
         require(_id > 0 && _id <= propertyCount, "Invalid id");
         uint256 index = _id - 1;
@@ -119,7 +135,7 @@ contract PropertyManager is AccessControl {
         address seller = p.owner;
         uint256 price = p.price;
 
-        _safeTransferFrom(token, msg.sender, seller, price);
+        token.safeTransferFrom(msg.sender, seller, price);
 
         p.owner = msg.sender;
         p.forSale = false;
@@ -127,7 +143,6 @@ contract PropertyManager is AccessControl {
         emit PropertyBought(_id, seller, msg.sender, price);
     }
 
-    /// @notice Return all properties
     function getAllProperties() external view returns (Property[] memory) {
         return properties;
     }
